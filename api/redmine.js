@@ -20,6 +20,8 @@ export default async function handler(req, res) {
     try {
         const { endpoint, ...queryParams } = req.query;
         
+        console.log('Redmine API 요청:', { endpoint, queryParams });
+        
         // 필수 파라미터 검증
         if (!endpoint) {
             res.status(400).json({ error: 'Endpoint is required' });
@@ -54,6 +56,8 @@ export default async function handler(req, res) {
             signal: AbortSignal.timeout(30000)
         });
 
+        console.log('Redmine API 응답 상태:', response.status);
+
         // 응답 상태 확인
         if (!response.ok) {
             const errorText = await response.text();
@@ -76,6 +80,7 @@ export default async function handler(req, res) {
 
         // JSON 응답 파싱 및 반환
         const data = await response.json();
+        console.log('Redmine API 응답 성공:', Object.keys(data));
         res.status(200).json(data);
 
     } catch (error) {

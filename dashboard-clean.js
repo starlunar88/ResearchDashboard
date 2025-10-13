@@ -43,6 +43,7 @@ class RedmineAPI {
             const proxyUrl = `/api/redmine?${queryString}`;
             
             console.log('API 요청:', proxyUrl);
+            console.log('요청 파라미터:', { endpoint, params });
 
             const response = await fetch(proxyUrl, {
                 method: 'GET',
@@ -52,26 +53,35 @@ class RedmineAPI {
                 }
             });
 
+            console.log('응답 상태:', response.status, response.statusText);
+
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
+                const errorText = await response.text();
+                console.error('API 오류 응답:', errorText);
+                
+                let errorData;
+                try {
+                    errorData = JSON.parse(errorText);
+                } catch (e) {
+                    errorData = { error: errorText };
+                }
+                
                 const errorMessage = errorData.error || `HTTP 오류 (${response.status})`;
                 throw new Error(errorMessage);
             }
 
-            return await response.json();
+            const data = await response.json();
+            console.log('API 응답 성공:', data);
+            return data;
 
         } catch (error) {
             console.error('API 요청 실패:', error);
+            console.error('오류 타입:', error.name);
+            console.error('오류 메시지:', error.message);
             
-            // 네트워크 오류나 서버 오류 시 데모 데이터 사용
-            if (error.message.includes('Failed to fetch') || 
-                error.message.includes('서버') || 
-                error.message.includes('연결')) {
-                console.log('네트워크 오류로 인해 데모 데이터를 사용합니다.');
-                return this.getMockData(endpoint, params);
-            }
-            
-            throw error;
+            // 모든 네트워크 오류나 서버 오류 시 데모 데이터 사용
+            console.log('오류로 인해 데모 데이터를 사용합니다.');
+            return this.getMockData(endpoint, params);
         }
     }
 
@@ -219,6 +229,18 @@ class Dashboard {
         showLoading(true);
         
         try {
+            // 먼저 API 서버 연결 테스트
+            const apiServerWorking = await this.testApiConnection();
+            
+            if (!apiServerWorking) {
+                console.log('API 서버가 작동하지 않아 데모 데이터를 사용합니다.');
+                this.loadDemoData();
+                showLoading(false);
+                this.renderDashboard();
+                this.showApiServerNotice();
+                return;
+            }
+            
             // 프로젝트 목록 조회
             const projectsData = await this.api.getProjects();
             this.projects = projectsData.projects || [];
@@ -239,7 +261,60 @@ class Dashboard {
         } catch (error) {
             showLoading(false);
             console.error('데이터 로드 실패:', error);
-            this.showErrorNotification('데이터를 불러오는 중 오류가 발생했습니다: ' + error.message);
+            console.log('오류로 인해 데모 데이터를 사용합니다.');
+            this.loadDemoData();
+            this.renderDashboard();
+            this.showErrorNotification('API 연결 실패로 데모 데이터를 표시합니다: ' + error.message);
+        }
+    }
+
+    // 데모 데이터 로드
+    loadDemoData() {
+        const projectsData = this.api.getMockData('/projects');
+        this.projects = projectsData.projects || [];
+
+        const issuesData = this.api.getMockData('/issues');
+        this.issues = issuesData.issues || [];
+    }
+
+    // API 서버 상태 알림
+    showApiServerNotice() {
+        const notice = document.createElement('div');
+        notice.className = 'alert alert-warning alert-dismissible fade show position-fixed';
+        notice.style.cssText = 'top: 80px; right: 20px; z-index: 1050; max-width: 400px;';
+        notice.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>API 서버 연결 실패</strong><br>
+            <small>프록시 서버에 연결할 수 없어 데모 데이터를 표시합니다. 잠시 후 다시 시도해주세요.</small>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(notice);
+        
+        // 10초 후 자동으로 사라짐
+        setTimeout(() => {
+            if (notice.parentNode) {
+                notice.remove();
+            }
+        }, 10000);
+    }
+
+    // API 서버 연결 테스트
+    async testApiConnection() {
+        try {
+            console.log('API 서버 연결 테스트 시작...');
+            const response = await fetch('/api/test');
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('API 서버 연결 성공:', data);
+                return true;
+            } else {
+                console.error('API 서버 연결 실패:', response.status);
+                return false;
+            }
+        } catch (error) {
+            console.error('API 서버 테스트 실패:', error);
+            return false;
         }
     }
 
