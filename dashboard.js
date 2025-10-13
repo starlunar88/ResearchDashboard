@@ -29,13 +29,13 @@ class RedmineAPI {
         };
     }
 
-    // 설정 저장
-    saveConfig(url, apiKey, projectId) {
+    // 설정 저장 (로그인 방식만 사용)
+    saveConfig(url, username, password, projectId = '') {
         this.config = { 
             url, 
-            apiKey, 
-            projectId,
-            username: this.config.username || ''
+            username, 
+            password,
+            projectId
         };
         localStorage.setItem('redmineConfig', JSON.stringify(this.config));
     }
@@ -198,6 +198,7 @@ class Dashboard {
         // 로그인 정보가 있는지 확인
         if (!this.api.config.username || !this.api.config.password) {
             // 로그인 페이지로 리다이렉트
+            alert('로그인 정보가 없습니다. 로그인 페이지로 이동합니다.');
             window.location.href = 'login.html';
             return;
         }
