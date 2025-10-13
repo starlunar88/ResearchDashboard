@@ -288,6 +288,14 @@ class Dashboard {
                 showLoading(false);
                 this.renderDashboard();
                 this.showApiServerNotice();
+                
+                // API 서버가 없어도 Redmine 직접 연결 시도
+                console.log('Redmine 서버 직접 연결을 시도합니다...');
+                try {
+                    await this.testRedmineConnection();
+                } catch (error) {
+                    console.log('Redmine 직접 연결도 실패:', error.message);
+                }
                 return;
             }
 
@@ -354,40 +362,52 @@ class Dashboard {
     // API 서버 상태 알림
     showApiServerNotice() {
         const notice = document.createElement('div');
-        notice.className = 'alert alert-warning alert-dismissible fade show position-fixed';
+        notice.className = 'alert alert-info alert-dismissible fade show position-fixed';
         notice.style.cssText = 'top: 80px; right: 20px; z-index: 1050; max-width: 400px;';
         notice.innerHTML = `
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            <strong>API 서버 연결 실패</strong><br>
-            <small>프록시 서버에 연결할 수 없어 데모 데이터를 표시합니다. 잠시 후 다시 시도해주세요.</small>
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>데모 모드</strong><br>
+            <small>API 서버가 배포 중이거나 일시적으로 사용할 수 없어 데모 데이터를 표시합니다. 잠시 후 새로고침해주세요.</small>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
         document.body.appendChild(notice);
         
-        // 10초 후 자동으로 사라짐
+        // 15초 후 자동으로 사라짐
         setTimeout(() => {
             if (notice.parentNode) {
                 notice.remove();
             }
-        }, 10000);
+        }, 15000);
     }
 
     // API 서버 연결 테스트
     async testApiConnection() {
         try {
             console.log('API 서버 연결 테스트 시작...');
-            const response = await fetch('/api/test');
+            const response = await fetch('/api/test', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                // 타임아웃 설정 (5초)
+                signal: AbortSignal.timeout(5000)
+            });
             
             if (response.ok) {
                 const data = await response.json();
                 console.log('API 서버 연결 성공:', data);
                 return true;
             } else {
-                console.error('API 서버 연결 실패:', response.status);
+                console.error('API 서버 연결 실패:', response.status, response.statusText);
                 return false;
             }
         } catch (error) {
             console.error('API 서버 테스트 실패:', error);
+            if (error.name === 'AbortError') {
+                console.log('API 서버 응답 시간 초과');
+            } else if (error.message.includes('404')) {
+                console.log('API 서버 엔드포인트를 찾을 수 없음 - 배포 중일 수 있음');
+            }
             return false;
         }
     }
