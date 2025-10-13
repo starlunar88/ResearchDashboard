@@ -240,6 +240,17 @@ class Dashboard {
                 this.showApiServerNotice();
                 return;
             }
+
+            // Redmine 서버 연결 테스트
+            const redmineServerWorking = await this.testRedmineConnection();
+            
+            if (!redmineServerWorking) {
+                console.log('Redmine 서버 연결 실패로 데모 데이터를 사용합니다.');
+                this.loadDemoData();
+                showLoading(false);
+                this.renderDashboard();
+                return;
+            }
             
             // 프로젝트 목록 조회
             const projectsData = await this.api.getProjects();
@@ -316,6 +327,56 @@ class Dashboard {
             console.error('API 서버 테스트 실패:', error);
             return false;
         }
+    }
+
+    // Redmine 서버 연결 테스트
+    async testRedmineConnection() {
+        try {
+            console.log('Redmine 서버 연결 테스트 시작...');
+            const response = await fetch('/api/redmine-test');
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Redmine 서버 테스트 결과:', data);
+                
+                if (data.success) {
+                    this.showSuccessNotification('Redmine 서버 연결 성공!');
+                    return true;
+                } else {
+                    this.showErrorNotification(`Redmine 서버 연결 실패: ${data.message}`);
+                    return false;
+                }
+            } else {
+                console.error('Redmine 서버 테스트 실패:', response.status);
+                this.showErrorNotification('Redmine 서버 테스트 요청 실패');
+                return false;
+            }
+        } catch (error) {
+            console.error('Redmine 서버 테스트 실패:', error);
+            this.showErrorNotification('Redmine 서버 테스트 중 오류 발생: ' + error.message);
+            return false;
+        }
+    }
+
+    // 성공 알림 표시
+    showSuccessNotification(message) {
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
+        notification.style.cssText = 'top: 80px; right: 20px; z-index: 1050; max-width: 400px;';
+        notification.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>
+            <strong>성공</strong><br>
+            <small>${message}</small>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(notification);
+        
+        // 5초 후 자동으로 사라짐
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
     }
 
     // 데모 데이터 사용 알림
@@ -549,6 +610,39 @@ function showLoading(show) {
     const spinner = document.getElementById('loadingSpinner');
     if (spinner) {
         spinner.style.display = show ? 'block' : 'none';
+    }
+}
+
+// 연결 테스트 함수
+async function testConnection() {
+    if (!dashboard) {
+        alert('대시보드가 초기화되지 않았습니다.');
+        return;
+    }
+
+    try {
+        // API 서버 테스트
+        const apiTest = await dashboard.testApiConnection();
+        console.log('API 서버 테스트 결과:', apiTest);
+        
+        // Redmine 서버 테스트
+        const redmineTest = await dashboard.testRedmineConnection();
+        console.log('Redmine 서버 테스트 결과:', redmineTest);
+        
+        // 결과 요약
+        if (apiTest && redmineTest) {
+            alert('모든 연결 테스트가 성공했습니다!');
+        } else if (apiTest && !redmineTest) {
+            alert('API 서버는 정상이지만 Redmine 서버 연결에 문제가 있습니다.');
+        } else if (!apiTest && redmineTest) {
+            alert('Redmine 서버는 정상이지만 API 서버 연결에 문제가 있습니다.');
+        } else {
+            alert('모든 연결 테스트가 실패했습니다. 데모 데이터를 사용합니다.');
+        }
+        
+    } catch (error) {
+        console.error('연결 테스트 중 오류:', error);
+        alert('연결 테스트 중 오류가 발생했습니다: ' + error.message);
     }
 }
 

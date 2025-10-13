@@ -43,6 +43,9 @@ export default async function handler(req, res) {
         const targetUrl = `${redmineUrl}${endpoint}.json?${queryString}`;
 
         console.log('Proxying request to:', targetUrl);
+        console.log('Redmine URL:', redmineUrl);
+        console.log('Endpoint:', endpoint);
+        console.log('Query params:', queryParams);
 
         // Redmine API로 프록시 요청
         const response = await fetch(targetUrl, {
