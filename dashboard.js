@@ -440,16 +440,17 @@ document.addEventListener('DOMContentLoaded', () => {
     dashboard.init();
 });
 
-// API 설정 모달 표시 (더 이상 사용하지 않음)
-function showApiConfig() {
-    alert('로그인 정보는 로그인 페이지에서 변경할 수 있습니다.');
-    window.location.href = 'login.html';
-}
-
-// API 설정 저장 (더 이상 사용하지 않음)
-function saveApiConfig() {
-    alert('로그인 정보는 로그인 페이지에서 변경할 수 있습니다.');
-    window.location.href = 'login.html';
+// 로그인 정보 변경
+function changeLoginInfo() {
+    if (confirm('로그인 정보를 변경하시겠습니까?\n현재 로그인 정보가 삭제되고 로그인 페이지로 이동합니다.')) {
+        // 현재 로그인 정보 삭제
+        localStorage.removeItem('redmineLoginInfo');
+        localStorage.removeItem('redmineConfig');
+        sessionStorage.removeItem('isLoggedIn');
+        
+        // 로그인 페이지로 이동
+        window.location.href = 'login.html';
+    }
 }
 
 // 데이터 새로고침
