@@ -6,23 +6,29 @@
   "scripts": {
     "start": "npx http-server -p 8080 -o",
     "build": "echo 'Static site - no build required'",
-    "deploy": "echo 'Deploy to your hosting service'"
+    "deploy": "vercel --prod",
+    "dev": "npx http-server -p 3000 -o"
   },
   "keywords": [
     "redmine",
     "dashboard",
     "project-management",
     "issue-tracking",
-    "ati2000"
+    "ati2000",
+    "vercel"
   ],
   "author": "ATI2000 Team",
   "license": "MIT",
   "devDependencies": {
-    "http-server": "^14.1.1"
+    "http-server": "^14.1.1",
+    "vercel": "^32.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/[사용자명]/redmine-dashboard.git"
   },
-  "homepage": "https://[사용자명].github.io/redmine-dashboard"
+  "homepage": "https://ati2000-redmine-dashboard.vercel.app"
 }
