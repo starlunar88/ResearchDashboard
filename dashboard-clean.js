@@ -194,20 +194,17 @@ class Dashboard {
     // 데이터 로드
     async loadData() {
         showLoading(true);
-        try {
-            const projectsData = await this.api.getProjects();
-            this.projects = projectsData.projects || [];
+        
+        // 일단 데모 데이터로 바로 표시
+        const projectsData = await this.api.getProjects();
+        this.projects = projectsData.projects || [];
 
-            const issuesData = await this.api.getIssues(null, {
-                status_id: '*'
-            });
-            this.issues = issuesData.issues || [];
+        const issuesData = await this.api.getIssues(null, {
+            status_id: '*'
+        });
+        this.issues = issuesData.issues || [];
 
-            showLoading(false);
-        } catch (error) {
-            showLoading(false);
-            alert('데이터를 불러오는 중 오류가 발생했습니다: ' + error.message);
-        }
+        showLoading(false);
     }
 
     // 대시보드 렌더링
