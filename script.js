@@ -4,26 +4,39 @@ class RedmineAPI {
         this.config = this.loadConfig();
     }
 
-    // 로컬 스토리지에서 설정 로드
+    // 로그인 정보에서 설정 로드
     loadConfig() {
-        const savedConfig = localStorage.getItem('redmineConfig');
-        return savedConfig ? JSON.parse(savedConfig) : {
+        const loginInfo = localStorage.getItem('redmineLoginInfo');
+        if (loginInfo) {
+            const login = JSON.parse(loginInfo);
+            return {
+                url: login.redmineUrl,
+                username: login.username,
+                password: login.password
+            };
+        }
+        return {
             url: 'https://pms.ati2000.co.kr',
-            apiKey: '',
-            projectId: ''
+            username: '',
+            password: ''
         };
     }
 
-    // 설정 저장
-    saveConfig(url, apiKey, projectId) {
-        this.config = { url, apiKey, projectId };
+    // 설정 저장 (로그인 방식만 사용)
+    saveConfig(url, username, password, projectId = '') {
+        this.config = { 
+            url, 
+            username, 
+            password,
+            projectId
+        };
         localStorage.setItem('redmineConfig', JSON.stringify(this.config));
     }
 
     // API 요청을 위한 헬퍼 함수
     async request(endpoint, params = {}) {
-        if (!this.config.apiKey) {
-            throw new Error('API 키가 설정되지 않았습니다.');
+        if (!this.config.username || !this.config.password) {
+            throw new Error('로그인 정보가 없습니다.');
         }
 
         // URL 검증
@@ -31,23 +44,29 @@ class RedmineAPI {
             throw new Error('올바르지 않은 Redmine URL입니다.');
         }
 
-        const queryString = new URLSearchParams(params).toString();
-        const url = `${this.config.url}${endpoint}.json?${queryString}`;
+        // 프록시 서버를 통한 API 요청
+        const queryString = new URLSearchParams({
+            endpoint: endpoint,
+            ...params
+        }).toString();
+        
+        const proxyUrl = `/api/redmine?${queryString}`;
+        
+        console.log('프록시 URL:', proxyUrl);
+        console.log('요청 파라미터:', { endpoint, params });
 
         try {
-            const response = await fetch(url, {
+            const response = await fetch(proxyUrl, {
+                method: 'GET',
                 headers: {
-                    'X-Redmine-API-Key': this.config.apiKey,
+                    'Authorization': 'Basic ' + btoa(this.config.username + ':' + this.config.password),
                     'Content-Type': 'application/json'
-                },
-                // CORS 및 보안 설정
-                mode: 'cors',
-                credentials: 'omit'
+                }
             });
 
             if (!response.ok) {
                 if (response.status === 401) {
-                    throw new Error('API 키가 유효하지 않습니다.');
+                    throw new Error('로그인 정보가 유효하지 않습니다.');
                 } else if (response.status === 403) {
                     throw new Error('API 접근 권한이 없습니다.');
                 } else if (response.status === 404) {
