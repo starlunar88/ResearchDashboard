@@ -1,0 +1,28 @@
+{
+  "name": "redmine-dashboard",
+  "version": "1.0.0",
+  "description": "ATI2000 Redmine 대시보드 - 프로젝트 및 이슈 관리 대시보드",
+  "main": "login.html",
+  "scripts": {
+    "start": "npx http-server -p 8080 -o",
+    "build": "echo 'Static site - no build required'",
+    "deploy": "echo 'Deploy to your hosting service'"
+  },
+  "keywords": [
+    "redmine",
+    "dashboard",
+    "project-management",
+    "issue-tracking",
+    "ati2000"
+  ],
+  "author": "ATI2000 Team",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/[사용자명]/redmine-dashboard.git"
+  },
+  "homepage": "https://[사용자명].github.io/redmine-dashboard"
+}
