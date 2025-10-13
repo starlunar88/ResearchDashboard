@@ -28,7 +28,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/[사용자명]/redmine-dashboard.git"
+    "url": "https://github.com/starlunar88/ResearchDashboard.git"
   },
-  "homepage": "https://ati2000-redmine-dashboard.vercel.app"
+  "homepage": "https://ati2000-research-dashboard.vercel.app"
 }

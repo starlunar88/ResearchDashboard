@@ -13,7 +13,7 @@
 ### 2. 프로젝트 배포
 
 1. GitHub 저장소를 선택합니다.
-2. 프로젝트 이름을 `ati2000-redmine-dashboard`로 설정합니다.
+2. 프로젝트 이름을 `ati2000-research-dashboard`로 설정합니다.
 3. Framework Preset은 "Other"를 선택합니다.
 4. Root Directory는 기본값(./)을 유지합니다.
 5. Build Command는 비워둡니다 (정적 사이트이므로).
@@ -33,7 +33,7 @@
 1. Vercel에서 제공하는 기본 도메인을 사용하거나
 2. 커스텀 도메인을 설정할 수 있습니다.
 
-기본 도메인 형식: `https://ati2000-redmine-dashboard.vercel.app`
+기본 도메인 형식: `https://ati2000-research-dashboard.vercel.app`
 
 ### 5. 자동 배포 설정
 
@@ -69,8 +69,8 @@ vercel --prod
 
 ## 배포 후 확인사항
 
-1. **로그인 페이지**: `https://ati2000-redmine-dashboard.vercel.app/` 또는 `https://ati2000-redmine-dashboard.vercel.app/login`
-2. **대시보드**: `https://ati2000-redmine-dashboard.vercel.app/dashboard`
+1. **로그인 페이지**: `https://ati2000-research-dashboard.vercel.app/` 또는 `https://ati2000-research-dashboard.vercel.app/login`
+2. **대시보드**: `https://ati2000-research-dashboard.vercel.app/dashboard`
 3. **API 설정**: 대시보드에서 API 설정 버튼을 통해 Redmine 서버 정보 입력
 
 ## 문제 해결
