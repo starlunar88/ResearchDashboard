@@ -98,15 +98,36 @@ redmine-dashboard/
 
 ## 🆘 문제 해결
 
+### "Failed to fetch" 오류 해결
+
+이 오류는 주로 CORS (Cross-Origin Resource Sharing) 정책 때문에 발생합니다. 다음과 같이 해결할 수 있습니다:
+
+#### 1. 프록시 서버 사용 (권장)
+- 현재 프로젝트는 Vercel API Routes를 사용한 프록시 서버를 포함하고 있습니다
+- `/api/redmine` 엔드포인트를 통해 Redmine API에 안전하게 접근할 수 있습니다
+
+#### 2. 일반적인 해결 방법
+- **Redmine 서버 URL 확인**: `https://pms.ati2000.co.kr`이 올바른지 확인
+- **로그인 정보 확인**: 사용자명과 비밀번호가 정확한지 확인
+- **네트워크 연결 확인**: 인터넷 연결 상태 확인
+- **브라우저 캐시 삭제**: 브라우저 캐시와 쿠키 삭제 후 재시도
+
+#### 3. 개발자 도구에서 확인할 사항
+```javascript
+// 브라우저 콘솔에서 다음 명령어로 확인
+console.log('로그인 정보:', localStorage.getItem('redmineLoginInfo'));
+console.log('API 설정:', localStorage.getItem('redmineConfig'));
+```
+
 ### API 연결 오류
 - Redmine 서버 URL이 올바른지 확인
-- API 키가 유효한지 확인
-- CORS 정책 확인 (필요시 Redmine 서버 설정)
+- 로그인 정보가 유효한지 확인
+- 프록시 서버 상태 확인 (Vercel 배포 상태)
 
 ### 데이터가 표시되지 않음
 - 브라우저 개발자 도구에서 콘솔 오류 확인
 - 네트워크 탭에서 API 요청 상태 확인
-- API 키 권한 확인
+- 데모 데이터가 표시되는 경우: 실제 로그인 정보 입력 필요
 
 ## 📞 지원
 

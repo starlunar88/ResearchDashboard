@@ -22,44 +22,67 @@ class RedmineAPI {
         };
     }
 
-    // API 요청
+    // API 요청 (프록시 서버 사용)
     async request(endpoint, params = {}) {
         if (!this.config.username || !this.config.password) {
             throw new Error('로그인 정보가 없습니다.');
         }
 
-        // CORS 문제로 인해 일단 데모 데이터 사용
-        console.log('CORS 제한으로 인해 데모 데이터를 사용합니다.');
-        return this.getMockData(endpoint, params);
-
-        // 실제 API 호출 (CORS 문제 해결 후 사용)
-        /*
-        const queryString = new URLSearchParams(params).toString();
-        const url = `${this.config.url}${endpoint}.json?${queryString}`;
+        // URL 검증
+        if (!this.isValidUrl(this.config.url)) {
+            throw new Error('올바르지 않은 Redmine URL입니다.');
+        }
 
         try {
-            const response = await fetch(url, {
+            // 프록시 서버를 통한 API 요청
+            const queryString = new URLSearchParams({
+                endpoint: endpoint,
+                ...params
+            }).toString();
+            
+            const proxyUrl = `/api/redmine?${queryString}`;
+            
+            console.log('API 요청:', proxyUrl);
+
+            const response = await fetch(proxyUrl, {
+                method: 'GET',
                 headers: {
                     'Authorization': 'Basic ' + btoa(this.config.username + ':' + this.config.password),
                     'Content-Type': 'application/json'
-                },
-                mode: 'cors',
-                credentials: 'include'
+                }
             });
 
             if (!response.ok) {
-                if (response.status === 401) {
-                    throw new Error('로그인 정보가 유효하지 않습니다.');
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorData = await response.json().catch(() => ({}));
+                const errorMessage = errorData.error || `HTTP 오류 (${response.status})`;
+                throw new Error(errorMessage);
             }
 
             return await response.json();
+
         } catch (error) {
             console.error('API 요청 실패:', error);
-            return this.getMockData(endpoint, params);
+            
+            // 네트워크 오류나 서버 오류 시 데모 데이터 사용
+            if (error.message.includes('Failed to fetch') || 
+                error.message.includes('서버') || 
+                error.message.includes('연결')) {
+                console.log('네트워크 오류로 인해 데모 데이터를 사용합니다.');
+                return this.getMockData(endpoint, params);
+            }
+            
+            throw error;
         }
-        */
+    }
+
+    // URL 유효성 검증
+    isValidUrl(string) {
+        try {
+            const url = new URL(string);
+            return url.protocol === 'http:' || url.protocol === 'https:';
+        } catch (_) {
+            return false;
+        }
     }
 
     // 데모용 목 데이터
@@ -195,16 +218,71 @@ class Dashboard {
     async loadData() {
         showLoading(true);
         
-        // 일단 데모 데이터로 바로 표시
-        const projectsData = await this.api.getProjects();
-        this.projects = projectsData.projects || [];
+        try {
+            // 프로젝트 목록 조회
+            const projectsData = await this.api.getProjects();
+            this.projects = projectsData.projects || [];
 
-        const issuesData = await this.api.getIssues(null, {
-            status_id: '*'
-        });
-        this.issues = issuesData.issues || [];
+            // 이슈 목록 조회
+            const issuesData = await this.api.getIssues(null, {
+                status_id: '*'
+            });
+            this.issues = issuesData.issues || [];
 
-        showLoading(false);
+            showLoading(false);
+            
+            // 데모 데이터 사용 시 알림 표시
+            if (this.projects.length > 0 && this.projects[0].name === "Research Note 프로젝트") {
+                this.showDemoDataNotice();
+            }
+            
+        } catch (error) {
+            showLoading(false);
+            console.error('데이터 로드 실패:', error);
+            this.showErrorNotification('데이터를 불러오는 중 오류가 발생했습니다: ' + error.message);
+        }
+    }
+
+    // 데모 데이터 사용 알림
+    showDemoDataNotice() {
+        const notice = document.createElement('div');
+        notice.className = 'alert alert-info alert-dismissible fade show position-fixed';
+        notice.style.cssText = 'top: 80px; right: 20px; z-index: 1050; max-width: 400px;';
+        notice.innerHTML = `
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>데모 데이터를 표시합니다.</strong><br>
+            <small>실제 Redmine 데이터를 보려면 올바른 로그인 정보를 입력하세요.</small>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(notice);
+        
+        // 8초 후 자동으로 사라짐
+        setTimeout(() => {
+            if (notice.parentNode) {
+                notice.remove();
+            }
+        }, 8000);
+    }
+
+    // 에러 알림 표시
+    showErrorNotification(message) {
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+        notification.style.cssText = 'top: 80px; right: 20px; z-index: 1050; max-width: 400px;';
+        notification.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>오류 발생</strong><br>
+            <small>${message}</small>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(notification);
+        
+        // 10초 후 자동으로 사라짐
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 10000);
     }
 
     // 대시보드 렌더링
