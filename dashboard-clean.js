@@ -28,6 +28,12 @@ class RedmineAPI {
             throw new Error('로그인 정보가 없습니다.');
         }
 
+        // CORS 문제로 인해 일단 데모 데이터 사용
+        console.log('CORS 제한으로 인해 데모 데이터를 사용합니다.');
+        return this.getMockData(endpoint, params);
+
+        // 실제 API 호출 (CORS 문제 해결 후 사용)
+        /*
         const queryString = new URLSearchParams(params).toString();
         const url = `${this.config.url}${endpoint}.json?${queryString}`;
 
@@ -51,9 +57,9 @@ class RedmineAPI {
             return await response.json();
         } catch (error) {
             console.error('API 요청 실패:', error);
-            // CORS 오류 시 데모 데이터 반환
             return this.getMockData(endpoint, params);
         }
+        */
     }
 
     // 데모용 목 데이터
@@ -66,6 +72,18 @@ class RedmineAPI {
                         name: "Research Note 프로젝트",
                         identifier: "research_note",
                         description: "ATI2000 Research Note 프로젝트"
+                    },
+                    {
+                        id: 2,
+                        name: "ATI2000 메인 프로젝트",
+                        identifier: "ati2000-main",
+                        description: "ATI2000의 메인 개발 프로젝트"
+                    },
+                    {
+                        id: 3,
+                        name: "웹 대시보드",
+                        identifier: "web-dashboard",
+                        description: "Redmine 대시보드 웹 애플리케이션"
                     }
                 ]
             };
@@ -79,6 +97,30 @@ class RedmineAPI {
                         status: { name: "진행중", is_closed: false },
                         updated_on: new Date().toISOString(),
                         due_date: null
+                    },
+                    {
+                        id: 2,
+                        subject: "API 연동 테스트",
+                        project: { id: 2, name: "ATI2000 메인 프로젝트" },
+                        status: { name: "완료", is_closed: true },
+                        updated_on: new Date(Date.now() - 86400000).toISOString(),
+                        due_date: null
+                    },
+                    {
+                        id: 3,
+                        subject: "UI 개선 작업",
+                        project: { id: 3, name: "웹 대시보드" },
+                        status: { name: "진행중", is_closed: false },
+                        updated_on: new Date(Date.now() - 3600000).toISOString(),
+                        due_date: new Date(Date.now() + 86400000).toISOString()
+                    },
+                    {
+                        id: 4,
+                        subject: "버그 수정",
+                        project: { id: 1, name: "Research Note 프로젝트" },
+                        status: { name: "지연", is_closed: false },
+                        updated_on: new Date(Date.now() - 172800000).toISOString(),
+                        due_date: new Date(Date.now() - 86400000).toISOString()
                     }
                 ]
             };
