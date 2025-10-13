@@ -24,12 +24,17 @@ class RedmineAPI {
 
     // API 요청 (프록시 서버 사용)
     async request(endpoint, params = {}) {
+        console.log('=== API 요청 시작 ===');
+        console.log('요청 정보:', { endpoint, params });
+        
         if (!this.config.username || !this.config.password) {
+            console.error('로그인 정보 누락');
             throw new Error('로그인 정보가 없습니다.');
         }
 
         // URL 검증
         if (!this.isValidUrl(this.config.url)) {
+            console.error('잘못된 URL:', this.config.url);
             throw new Error('올바르지 않은 Redmine URL입니다.');
         }
 
@@ -42,8 +47,16 @@ class RedmineAPI {
             
             const proxyUrl = `/api/redmine?${queryString}`;
             
-            console.log('API 요청:', proxyUrl);
+            console.log('프록시 URL:', proxyUrl);
             console.log('요청 파라미터:', { endpoint, params });
+            console.log('인증 정보:', {
+                username: this.config.username,
+                hasPassword: !!this.config.password,
+                redmineUrl: this.config.url
+            });
+
+            const requestStartTime = Date.now();
+            console.log('요청 시작 시간:', new Date().toISOString());
 
             const response = await fetch(proxyUrl, {
                 method: 'GET',
@@ -53,31 +66,51 @@ class RedmineAPI {
                 }
             });
 
+            const requestEndTime = Date.now();
+            console.log('요청 완료 시간:', new Date().toISOString());
+            console.log('요청 소요 시간:', requestEndTime - requestStartTime, 'ms');
             console.log('응답 상태:', response.status, response.statusText);
+            console.log('응답 헤더:', Object.fromEntries(response.headers.entries()));
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('API 오류 응답:', errorText);
+                console.error('API 오류 응답 본문:', errorText);
                 
                 let errorData;
                 try {
                     errorData = JSON.parse(errorText);
+                    console.error('파싱된 오류 데이터:', errorData);
                 } catch (e) {
+                    console.error('JSON 파싱 실패:', e);
                     errorData = { error: errorText };
                 }
                 
                 const errorMessage = errorData.error || `HTTP 오류 (${response.status})`;
+                console.error('최종 오류 메시지:', errorMessage);
                 throw new Error(errorMessage);
             }
 
             const data = await response.json();
-            console.log('API 응답 성공:', data);
+            console.log('API 응답 성공 - 데이터 키:', Object.keys(data));
+            console.log('API 응답 데이터 샘플:', data);
+            console.log('=== API 요청 성공 ===');
             return data;
 
         } catch (error) {
-            console.error('API 요청 실패:', error);
+            console.error('=== API 요청 실패 ===');
+            console.error('오류 객체:', error);
             console.error('오류 타입:', error.name);
             console.error('오류 메시지:', error.message);
+            console.error('오류 스택:', error.stack);
+            
+            // 네트워크 오류 상세 분석
+            if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                console.error('네트워크 오류 분석:');
+                console.error('- CORS 문제 가능성');
+                console.error('- 네트워크 연결 문제');
+                console.error('- 서버 응답 없음');
+                console.error('- DNS 해결 실패');
+            }
             
             // 모든 네트워크 오류나 서버 오류 시 데모 데이터 사용
             console.log('오류로 인해 데모 데이터를 사용합니다.');
@@ -184,8 +217,11 @@ class Dashboard {
 
     // 초기화
     async init() {
+        console.log('=== 대시보드 초기화 시작 ===');
+        
         // 로그인 상태 확인
         if (!this.checkAuth()) {
+            console.log('인증 실패 - 로그인 페이지로 리다이렉트');
             return;
         }
 
@@ -194,13 +230,24 @@ class Dashboard {
 
         // 로그인 정보가 있는지 확인
         if (!this.api.config.username || !this.api.config.password) {
+            console.log('로그인 정보 누락:', {
+                username: this.api.config.username ? '있음' : '없음',
+                password: this.api.config.password ? '있음' : '없음'
+            });
             alert('로그인 정보가 없습니다. 로그인 페이지로 이동합니다.');
             window.location.href = 'login.html';
             return;
         }
 
+        console.log('로그인 정보 확인 완료:', {
+            username: this.api.config.username,
+            redmineUrl: this.api.config.url
+        });
+
         await this.loadData();
         this.renderDashboard();
+        
+        console.log('=== 대시보드 초기화 완료 ===');
     }
 
     // 인증 상태 확인
@@ -226,11 +273,14 @@ class Dashboard {
 
     // 데이터 로드
     async loadData() {
+        console.log('=== 데이터 로드 시작 ===');
         showLoading(true);
         
         try {
             // 먼저 API 서버 연결 테스트
+            console.log('1단계: API 서버 연결 테스트');
             const apiServerWorking = await this.testApiConnection();
+            console.log('API 서버 테스트 결과:', apiServerWorking);
             
             if (!apiServerWorking) {
                 console.log('API 서버가 작동하지 않아 데모 데이터를 사용합니다.');
@@ -242,7 +292,9 @@ class Dashboard {
             }
 
             // Redmine 서버 연결 테스트
+            console.log('2단계: Redmine 서버 연결 테스트');
             const redmineServerWorking = await this.testRedmineConnection();
+            console.log('Redmine 서버 테스트 결과:', redmineServerWorking);
             
             if (!redmineServerWorking) {
                 console.log('Redmine 서버 연결 실패로 데모 데이터를 사용합니다.');
@@ -253,25 +305,36 @@ class Dashboard {
             }
             
             // 프로젝트 목록 조회
+            console.log('3단계: 프로젝트 목록 조회');
             const projectsData = await this.api.getProjects();
             this.projects = projectsData.projects || [];
+            console.log('프로젝트 데이터 로드 완료:', this.projects.length, '개');
 
             // 이슈 목록 조회
+            console.log('4단계: 이슈 목록 조회');
             const issuesData = await this.api.getIssues(null, {
                 status_id: '*'
             });
             this.issues = issuesData.issues || [];
+            console.log('이슈 데이터 로드 완료:', this.issues.length, '개');
 
             showLoading(false);
+            console.log('=== 데이터 로드 성공 ===');
             
             // 데모 데이터 사용 시 알림 표시
             if (this.projects.length > 0 && this.projects[0].name === "Research Note 프로젝트") {
+                console.log('데모 데이터 사용 중');
                 this.showDemoDataNotice();
             }
             
         } catch (error) {
             showLoading(false);
-            console.error('데이터 로드 실패:', error);
+            console.error('=== 데이터 로드 실패 ===');
+            console.error('오류 객체:', error);
+            console.error('오류 타입:', error.name);
+            console.error('오류 메시지:', error.message);
+            console.error('오류 스택:', error.stack);
+            
             console.log('오류로 인해 데모 데이터를 사용합니다.');
             this.loadDemoData();
             this.renderDashboard();
@@ -644,6 +707,63 @@ async function testConnection() {
         console.error('연결 테스트 중 오류:', error);
         alert('연결 테스트 중 오류가 발생했습니다: ' + error.message);
     }
+}
+
+// 로그 확인 함수
+function showLogs() {
+    const logInfo = {
+        userAgent: navigator.userAgent,
+        currentUrl: window.location.href,
+        loginInfo: localStorage.getItem('redmineLoginInfo') ? '있음' : '없음',
+        config: localStorage.getItem('redmineConfig') ? '있음' : '없음',
+        isLoggedIn: sessionStorage.getItem('isLoggedIn'),
+        timestamp: new Date().toISOString()
+    };
+    
+    console.log('=== 현재 상태 정보 ===');
+    console.log('로그 정보:', logInfo);
+    
+    // 로그 정보를 모달로 표시
+    const modal = document.createElement('div');
+    modal.className = 'modal fade show';
+    modal.style.display = 'block';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">로그 및 상태 정보</h5>
+                    <button type="button" class="btn-close" onclick="this.closest('.modal').remove()"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>현재 상태:</h6>
+                    <pre style="background: #f8f9fa; padding: 10px; border-radius: 5px; font-size: 12px;">${JSON.stringify(logInfo, null, 2)}</pre>
+                    
+                    <h6 class="mt-3">개발자 도구 확인 방법:</h6>
+                    <ol>
+                        <li>F12 키를 눌러 개발자 도구 열기</li>
+                        <li>Console 탭 클릭</li>
+                        <li>페이지 새로고침 후 로그 확인</li>
+                        <li>Network 탭에서 API 요청 상태 확인</li>
+                    </ol>
+                    
+                    <div class="alert alert-info mt-3">
+                        <strong>중요:</strong> 상세한 로그는 브라우저 개발자 도구의 Console 탭에서 확인할 수 있습니다.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">닫기</button>
+                    <button type="button" class="btn btn-primary" onclick="openDevTools()">개발자 도구 열기</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+// 개발자 도구 열기 함수
+function openDevTools() {
+    alert('F12 키를 눌러 개발자 도구를 열고 Console 탭에서 상세한 로그를 확인하세요.');
 }
 
 // 로그아웃 함수
